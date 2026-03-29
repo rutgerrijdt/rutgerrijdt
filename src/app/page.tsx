@@ -14,16 +14,15 @@ import { ResultsPanel } from '@/components/ResultsPanel';
 type Step = 'inkomen' | 'schulden' | 'hypotheek' | 'documenten' | 'resultaat';
 
 const STEPS: { id: Step; label: string; icon: string }[] = [
-  { id: 'inkomen',   label: 'Aanvrager & inkomen', icon: '👤' },
-  { id: 'schulden',  label: 'Schulden',             icon: '💳' },
-  { id: 'hypotheek', label: 'Hypotheek',            icon: '🏠' },
-  { id: 'documenten',label: 'Documenten',           icon: '📎' },
-  { id: 'resultaat', label: 'Berekening',           icon: '📊' },
+  { id: 'inkomen',   label: 'Aanvrager & inkomen', icon: '\u{1f464}' },
+  { id: 'schulden',  label: 'Schulden',             icon: '\u{1f4b3}' },
+  { id: 'hypotheek', label: 'Hypotheek',            icon: '\u{1f3e0}' },
+  { id: 'documenten',label: 'Documenten',           icon: '\u{1f4ce}' },
+  { id: 'resultaat', label: 'Berekening',           icon: '\u{1f4ca}' },
 ];
 
 // ---- Create empty application ----
 function createApplication(): Application {
-  // Use crypto.randomUUID if available, fallback to timestamp
   const id =
     typeof crypto !== 'undefined' && crypto.randomUUID
       ? crypto.randomUUID()
@@ -59,7 +58,6 @@ export default function Home() {
   const [step, setStep] = useState<Step>('inkomen');
   const [saved, setSaved] = useState(false);
 
-  // Load from localStorage on mount
   useEffect(() => {
     setApplications(loadApplications());
   }, []);
@@ -115,21 +113,29 @@ export default function Home() {
           <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
             <div>
               <h1 className="text-xl font-bold text-gray-900">Hypotheken App</h1>
-              <p className="text-xs text-gray-500 mt-0.5">GHF & NHG Berekeningen 2025</p>
+              <p className="text-xs text-gray-500 mt-0.5">GHF &amp; NHG Berekeningen 2025</p>
             </div>
-            <button
-              onClick={openNew}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm"
-            >
-              + Nieuwe aanvraag
-            </button>
+            <div className="flex items-center gap-3">
+              <a
+                href="/consumer/login"
+                className="text-sm text-gray-500 hover:text-blue-600 border border-gray-200 rounded-lg px-3 py-2 hover:border-blue-300 transition"
+              >
+                Consumentenportaal
+              </a>
+              <button
+                onClick={openNew}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition shadow-sm"
+              >
+                + Nieuwe aanvraag
+              </button>
+            </div>
           </div>
         </header>
 
         <main className="max-w-5xl mx-auto px-4 py-8">
           {applications.length === 0 ? (
             <div className="text-center py-20">
-              <div className="text-6xl mb-4">🏠</div>
+              <div className="text-6xl mb-4">\u{1f3e0}</div>
               <h2 className="text-xl font-semibold text-gray-700 mb-2">Nog geen aanvragen</h2>
               <p className="text-gray-400 mb-6">Maak een nieuwe hypotheekaanvraag aan om te beginnen.</p>
               <button
@@ -151,6 +157,7 @@ export default function Home() {
                 const naam = hoofdaanvrager
                   ? `${hoofdaanvrager.personal.firstName} ${hoofdaanvrager.personal.lastName}`.trim() || 'Naamloos'
                   : 'Naamloos';
+                const consumerEmail = hoofdaanvrager?.personal.email?.trim();
                 return (
                   <div
                     key={app.id}
@@ -168,7 +175,7 @@ export default function Home() {
                             Gewijzigd: {new Date(app.updatedAt).toLocaleDateString('nl-NL')}
                           </span>
                         </div>
-                        <div className="flex gap-4 mt-2 text-sm text-gray-600">
+                        <div className="flex gap-4 mt-2 text-sm text-gray-600 flex-wrap">
                           {app.mortgage.requestedAmount > 0 && (
                             <span>
                               Hypotheek:{' '}
@@ -197,8 +204,17 @@ export default function Home() {
                             <span>{app.documents.length} document{app.documents.length !== 1 ? 'en' : ''}</span>
                           )}
                         </div>
+                        {consumerEmail && (
+                          <div className="mt-2 flex items-center gap-1.5 text-xs text-blue-600">
+                            <span>\u{1f517}</span>
+                            <span>
+                              Consumentenportaal: log in met{' '}
+                              <span className="font-medium">{consumerEmail}</span>
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex gap-2 ml-4">
+                      <div className="flex flex-col gap-2 ml-4">
                         <button
                           onClick={() => openExisting(app)}
                           className="px-3 py-1.5 bg-blue-100 text-blue-700 text-sm rounded-lg hover:bg-blue-200 font-medium transition"
@@ -237,11 +253,11 @@ export default function Home() {
             onClick={() => setView('list')}
             className="text-sm text-blue-600 hover:underline font-medium"
           >
-            ← Overzicht
+            \u2190 Overzicht
           </button>
           <div className="flex items-center gap-3">
             {saved && (
-              <span className="text-xs text-green-600 font-medium animate-pulse">Opgeslagen ✓</span>
+              <span className="text-xs text-green-600 font-medium animate-pulse">Opgeslagen \u2713</span>
             )}
             <StatusBadge status={current.status} />
             <select
@@ -342,7 +358,7 @@ export default function Home() {
             disabled={stepIdx === 0}
             className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            ← Vorige
+            \u2190 Vorige
           </button>
 
           <div className="flex gap-2">
@@ -362,7 +378,7 @@ export default function Home() {
                 }}
                 className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition shadow-sm"
               >
-                Volgende →
+                Volgende \u2192
               </button>
             )}
           </div>
