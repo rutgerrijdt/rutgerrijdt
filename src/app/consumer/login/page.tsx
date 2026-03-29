@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { loginConsumer, registerConsumer, getCurrentConsumer } from '@/lib/auth';
+import { loginConsumer, getCurrentConsumer } from '@/lib/auth';
 
 export default function ConsumerLoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -25,35 +23,16 @@ export default function ConsumerLoginPage() {
     setLoading(true);
 
     if (!email.trim() || !password.trim()) {
-      setError('Vul alle verplichte velden in.');
+      setError('Vul uw e-mailadres en wachtwoord in.');
       setLoading(false);
       return;
     }
 
-    if (mode === 'register') {
-      if (!name.trim()) {
-        setError('Vul uw naam in.');
-        setLoading(false);
-        return;
-      }
-      if (password.length < 6) {
-        setError('Wachtwoord moet minimaal 6 tekens zijn.');
-        setLoading(false);
-        return;
-      }
-      const result = registerConsumer(email, password, name);
-      if (!result.success) {
-        setError(result.error);
-        setLoading(false);
-        return;
-      }
-    } else {
-      const result = loginConsumer(email, password);
-      if (!result.success) {
-        setError(result.error);
-        setLoading(false);
-        return;
-      }
+    const result = loginConsumer(email, password);
+    if (!result.success) {
+      setError(result.error);
+      setLoading(false);
+      return;
     }
 
     router.push('/consumer');
@@ -70,45 +49,12 @@ export default function ConsumerLoginPage() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-          {/* Tab toggle */}
-          <div className="flex rounded-xl bg-gray-100 p-1 mb-6">
-            <button
-              onClick={() => { setMode('login'); setError(''); }}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition ${
-                mode === 'login' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Inloggen
-            </button>
-            <button
-              onClick={() => { setMode('register'); setError(''); }}
-              className={`flex-1 py-2 text-sm font-medium rounded-lg transition ${
-                mode === 'register' ? 'bg-white shadow text-gray-900' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Registreren
-            </button>
-          </div>
+          <h2 className="text-base font-semibold text-gray-800 mb-5">Inloggen</h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {mode === 'register' && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Volledige naam <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Bijv. Jan de Vries"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            )}
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                E-mailadres <span className="text-red-500">*</span>
+                E-mailadres
               </label>
               <input
                 type="email"
@@ -118,23 +64,18 @@ export default function ConsumerLoginPage() {
                 autoComplete="email"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              {mode === 'register' && (
-                <p className="text-xs text-gray-400 mt-1">
-                  Gebruik het e-mailadres dat u bij uw hypotheekadviseur heeft opgegeven.
-                </p>
-              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Wachtwoord <span className="text-red-500">*</span>
+                Wachtwoord
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={mode === 'register' ? 'Minimaal 6 tekens' : '••••••••'}
-                autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
+                placeholder="••••••••"
+                autoComplete="current-password"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -150,9 +91,13 @@ export default function ConsumerLoginPage() {
               disabled={loading}
               className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium text-sm hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {mode === 'login' ? 'Inloggen' : 'Account aanmaken'}
+              Inloggen
             </button>
           </form>
+
+          <p className="text-xs text-gray-400 text-center mt-5">
+            Uw inloggegevens ontvangt u van uw hypotheekadviseur.
+          </p>
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
