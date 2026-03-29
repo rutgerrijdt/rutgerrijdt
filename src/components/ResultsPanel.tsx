@@ -5,6 +5,9 @@ import { runFullCalculation, formatEuro, formatPercent } from '@/lib/utils';
 import { calculateBijkomendeKosten, calculateOVB } from '@/lib/nhg';
 import { StressTest } from './StressTest';
 import { ScenarioComparison } from './ScenarioComparison';
+import { AmortizationTable } from './AmortizationTable';
+import { TaxDeductionPanel } from './TaxDeductionPanel';
+import { LenderComparison } from './LenderComparison';
 
 interface Props {
   application: Application;
@@ -26,7 +29,15 @@ export function ResultsPanel({ application }: Props) {
 
   return (
     <div className="space-y-5">
-      <h3 className="text-lg font-semibold text-gray-800">Berekening & advies</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-800">Berekening & advies</h3>
+        <button
+          onClick={() => window.print()}
+          className="no-print px-3 py-1.5 text-sm bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition font-medium"
+        >
+          🖨️ Afdrukken
+        </button>
+      </div>
 
       {/* Feasibility badge */}
       <div
@@ -286,6 +297,19 @@ export function ResultsPanel({ application }: Props) {
         </div>
       )}
 
+      {/* Hypotheekrenteaftrek */}
+      <TaxDeductionPanel application={application} />
+
+      {/* Aflossingsschema */}
+      {application.mortgage.requestedAmount > 0 && (
+        <AmortizationTable
+          loanAmount={application.mortgage.requestedAmount}
+          annualRate={application.mortgage.interestRate}
+          termYears={application.mortgage.loanTerm}
+          type={application.mortgage.mortgageType}
+        />
+      )}
+
       {/* Rentestresstest */}
       <StressTest application={application} currentMonthly={actualPayment.firstMonth} />
 
@@ -296,6 +320,9 @@ export function ResultsPanel({ application }: Props) {
           propertyValue={application.mortgage.propertyValue}
         />
       )}
+
+      {/* Geldverstrekkersvergelijking */}
+      <LenderComparison mortgage={application.mortgage} />
 
       <p className="text-xs text-gray-400 text-center">
         Deze berekening is indicatief en gebaseerd op GHF/NHG-normen 2025–2026. Definitieve acceptatie is aan de geldverstrekker.

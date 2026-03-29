@@ -60,6 +60,52 @@ export function MortgageForm({ data, onChange }: Props) {
               min={0}
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Verbouwingsbudget (€)</label>
+            <input
+              type="number"
+              value={data.renovationBudget || ''}
+              onChange={(e) => setNum('renovationBudget', e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="0"
+              min={0}
+            />
+            {(data.renovationBudget ?? 0) > 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                Totale financieringsbehoefte: {formatEuro(data.requestedAmount + (data.renovationBudget ?? 0))}
+              </p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Energielabel</label>
+            <div className="flex flex-wrap gap-1">
+              {(['A+++', 'A++', 'A+', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'onbekend'] as const).map((label) => {
+                const colors: Record<string, string> = {
+                  'A+++': 'bg-green-800 text-white', 'A++': 'bg-green-700 text-white',
+                  'A+': 'bg-green-600 text-white', 'A': 'bg-green-500 text-white',
+                  'B': 'bg-lime-500 text-white', 'C': 'bg-yellow-400 text-gray-800',
+                  'D': 'bg-orange-400 text-white', 'E': 'bg-orange-500 text-white',
+                  'F': 'bg-red-500 text-white', 'G': 'bg-red-700 text-white',
+                  'onbekend': 'bg-gray-200 text-gray-600',
+                };
+                const active = (data.energyLabel ?? 'onbekend') === label;
+                return (
+                  <button
+                    key={label}
+                    onClick={() => set('energyLabel', label)}
+                    className={`px-2 py-0.5 rounded text-xs font-bold border-2 transition ${
+                      active ? `${colors[label]} border-gray-800 shadow` : 'bg-white text-gray-400 border-gray-200 hover:border-gray-400'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            {energyAdvice(data.energyLabel ?? 'onbekend') && (
+              <p className="text-xs text-green-700 mt-1">{energyAdvice(data.energyLabel ?? 'onbekend')}</p>
+            )}
+          </div>
         </div>
 
         {data.propertyValue > 0 && data.requestedAmount > 0 && (
@@ -253,4 +299,14 @@ export function MortgageForm({ data, onChange }: Props) {
       </div>
     </div>
   );
+}
+
+function energyAdvice(label: string): string {
+  if (['A+++', 'A++', 'A+'].includes(label))
+    return 'Uitstekend energielabel — mogelijkheid op groene hypotheek met rentevoordeel (~0,1–0,2%).';
+  if (label === 'A')
+    return 'Goed energielabel — sommige geldverstrekkers bieden een kleine rentekorting.';
+  if (['E', 'F', 'G'].includes(label))
+    return 'Laag energielabel — overweeg energiebesparende maatregelen voor NHG-voordeel en lagere energielasten.';
+  return '';
 }

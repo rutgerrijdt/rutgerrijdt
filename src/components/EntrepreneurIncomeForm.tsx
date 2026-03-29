@@ -179,17 +179,61 @@ export function EntrepreneurIncomeForm({ data, onChange, onRemove }: Props) {
         </div>
       )}
 
-      {/* Toetsinkomen samenvatting */}
-      {toetsinkomen > 0 && (
+      {/* Inkomenstrend + toetsinkomen */}
+      {!isDGA && toetsinkomen > 0 && (() => {
+        const p1 = data.year1.fiscalProfit + data.year1.addBackItems;
+        const p2 = data.year2.fiscalProfit + data.year2.addBackItems;
+        const p3 = data.year3.fiscalProfit + data.year3.addBackItems;
+        const allFilled = p1 > 0 && p2 > 0 && p3 > 0;
+        const trend = allFilled
+          ? p3 > p2 && p2 > p1 ? 'stijgend'
+            : p3 < p2 && p2 < p1 ? 'dalend'
+            : p3 > p1 ? 'licht stijgend'
+            : p3 < p1 ? 'licht dalend'
+            : 'stabiel'
+          : null;
+        const trendColor = trend?.includes('stijgend') ? 'text-green-700' : trend?.includes('dalend') ? 'text-red-600' : 'text-amber-600';
+        const trendIcon = trend?.includes('stijgend') ? '↗' : trend?.includes('dalend') ? '↘' : '→';
+        return (
+          <div className="bg-green-100 rounded-lg p-3 space-y-1">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-green-800">
+                <span className="font-semibold">Toetsinkomen:</span> {formatEuro(toetsinkomen)} per jaar
+              </p>
+              {trend && (
+                <span className={`text-sm font-semibold ${trendColor}`}>{trendIcon} {trend}</span>
+              )}
+            </div>
+            {allFilled && (
+              <div className="flex gap-2 items-end h-8 mt-1">
+                {[p1, p2, p3].map((p, i) => {
+                  const maxP = Math.max(p1, p2, p3);
+                  const h = maxP > 0 ? (p / maxP) * 100 : 0;
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center justify-end gap-0.5">
+                      <div
+                        className={`w-full rounded-t ${trend?.includes('stijgend') ? 'bg-green-500' : trend?.includes('dalend') ? 'bg-red-400' : 'bg-amber-400'}`}
+                        style={{ height: `${h}%` }}
+                        title={formatEuro(p)}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <p className="text-xs text-green-700">
+              Gemiddelde van 3 jaar fiscale winst + optelposten
+              {trend === 'dalend' && ' — let op: geldverstrekkers kunnen het laagste jaar hanteren'}
+            </p>
+          </div>
+        );
+      })()}
+      {isDGA && toetsinkomen > 0 && (
         <div className="bg-green-100 rounded-lg p-3">
           <p className="text-sm text-green-800">
             <span className="font-semibold">Toetsinkomen:</span> {formatEuro(toetsinkomen)} per jaar
           </p>
-          <p className="text-xs text-green-700 mt-1">
-            {isDGA
-              ? 'Op basis van DGA-loon'
-              : 'Gemiddelde van 3 jaar fiscale winst + optelposten'}
-          </p>
+          <p className="text-xs text-green-700 mt-1">Op basis van DGA-loon</p>
         </div>
       )}
     </div>

@@ -68,10 +68,13 @@ export interface Applicant {
   incomeSources: IncomeSource[];
 }
 
+export type EnergyLabel = 'A+++' | 'A++' | 'A+' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'onbekend';
+
 // ---- Mortgage details ----
 export interface MortgageDetails {
   propertyValue: number;        // Woningwaarde / koopsom
   requestedAmount: number;      // Gevraagd hypotheekbedrag
+  renovationBudget: number;     // Verbouwingsbudget (onderdeel van hypotheek)
   mortgageType: MortgageType;
   fixedRatePeriod: number;      // Rentevaste periode (years)
   interestRate: number;         // Rente (decimal, e.g. 0.042 = 4.2%)
@@ -81,6 +84,7 @@ export interface MortgageDetails {
   nhgYear: 2025 | 2026;         // NHG normjaar
   includeEnergyMeasures: boolean; // Energiebesparende maatregelen (voor hogere NHG grens)
   existingMortgage: number;     // Bestaande hypotheek (bij verbouw)
+  energyLabel: EnergyLabel;     // Energielabel van de woning
 }
 
 // ---- Uploaded document ----
@@ -207,5 +211,7 @@ export function emptyMortgageDetails(): MortgageDetails {
     nhgYear: 2026,
     includeEnergyMeasures: false,
     existingMortgage: 0,
+    renovationBudget: 0,
+    energyLabel: 'onbekend',
   };
 }

@@ -21,4 +21,18 @@ html {
   .no-print {
     display: none !important;
   }
+  header, nav, footer {
+    display: none !important;
+  }
+  body {
+    background: white;
+    font-size: 12px;
+  }
+  .border {
+    border-color: #ccc !important;
+  }
+  /* Verberg stapnavigatie en knoppen bij afdrukken */
+  button:not(.print-show) {
+    display: none !important;
+  }
 }
