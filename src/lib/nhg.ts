@@ -1,5 +1,5 @@
 // ============================================================
-// NHG – Nationale Hypotheek Garantie – normen 2025
+// NHG – Nationale Hypotheek Garantie – normen 2025 & 2026
 // ============================================================
 
 import type { NHGResult, MortgageDetails } from './types';
@@ -8,15 +8,46 @@ import type { NHGResult, MortgageDetails } from './types';
 export const NHG_LIMIT_2025 = 435_000;
 export const NHG_LIMIT_ENERGY_2025 = 461_100; // +6% voor energiebesparende maatregelen
 
+// NHG kostengrens 2026
+export const NHG_LIMIT_2026 = 450_000;
+export const NHG_LIMIT_ENERGY_2026 = 477_000; // +6% voor energiebesparende maatregelen
+
 // Borgtochtprovisie (eenmalig, onderdeel van de hypotheek)
 export const NHG_FEE_PERCENTAGE = 0.006; // 0.6%
 
 // Rente­voordeel met NHG (indicatief, verschilt per geldverstrekker)
 export const NHG_INTEREST_DISCOUNT = 0.004; // ~0.4% lager
 
+export type NHGYear = 2025 | 2026;
+
+export interface NHGNorms {
+  year: NHGYear;
+  limit: number;
+  limitEnergy: number;
+  feePercentage: number;
+  starterOvbGrens: number;
+}
+
+export const NHG_NORMS: Record<NHGYear, NHGNorms> = {
+  2025: {
+    year: 2025,
+    limit: NHG_LIMIT_2025,
+    limitEnergy: NHG_LIMIT_ENERGY_2025,
+    feePercentage: NHG_FEE_PERCENTAGE,
+    starterOvbGrens: 510_000,
+  },
+  2026: {
+    year: 2026,
+    limit: NHG_LIMIT_2026,
+    limitEnergy: NHG_LIMIT_ENERGY_2026,
+    feePercentage: NHG_FEE_PERCENTAGE,
+    starterOvbGrens: 510_000,
+  },
+};
+
 // ---- Startersvrijstelling ----
 // Kopers < 35 jaar zijn vrijgesteld van overdrachtsbelasting (2%)
-// bij woningwaarde <= €510.000 (2025)
+// bij woningwaarde <= starterOvbGrens
 export const STARTER_OVB_VRIJSTELLING_GRENS = 510_000;
 
 // Overdrachtsbelasting
@@ -25,7 +56,8 @@ export const OVB_PERCENTAGE_INVESTEERDER = 0.1; // 10.4% bij belegging
 
 // ---- NHG eligibility check ----
 export function checkNHG(mortgage: MortgageDetails): NHGResult {
-  const limit = mortgage.includeEnergyMeasures ? NHG_LIMIT_ENERGY_2025 : NHG_LIMIT_2025;
+  const norms = NHG_NORMS[mortgage.nhgYear ?? 2026];
+  const limit = mortgage.includeEnergyMeasures ? norms.limitEnergy : norms.limit;
 
   const eligible =
     mortgage.nhgDesired &&
@@ -33,7 +65,7 @@ export function checkNHG(mortgage: MortgageDetails): NHGResult {
     mortgage.requestedAmount <= limit &&
     mortgage.loanTerm <= 30;
 
-  const fee = mortgage.requestedAmount * NHG_FEE_PERCENTAGE;
+  const fee = mortgage.requestedAmount * norms.feePercentage;
 
   // Netto besparing over 30 jaar: rentevoordeel - eenmalige provisie
   const annualSaving = mortgage.requestedAmount * NHG_INTEREST_DISCOUNT;
@@ -64,7 +96,8 @@ export function checkNHG(mortgage: MortgageDetails): NHGResult {
 export function calculateOVB(
   propertyValue: number,
   dateOfBirth: string,
-  firstHome: boolean
+  firstHome: boolean,
+  nhgYear: NHGYear = 2026,
 ): { percentage: number; amount: number; starterVrijstelling: boolean } {
   if (!firstHome) {
     return { percentage: OVB_PERCENTAGE_NORMAAL, amount: Math.round(propertyValue * OVB_PERCENTAGE_NORMAAL), starterVrijstelling: false };
@@ -78,7 +111,8 @@ export function calculateOVB(
     age = now.getFullYear() - dob.getFullYear();
   }
 
-  const starterVrijstelling = age > 0 && age < 35 && propertyValue <= STARTER_OVB_VRIJSTELLING_GRENS;
+  const grens = NHG_NORMS[nhgYear].starterOvbGrens;
+  const starterVrijstelling = age > 0 && age < 35 && propertyValue <= grens;
 
   if (starterVrijstelling) {
     return { percentage: 0, amount: 0, starterVrijstelling: true };

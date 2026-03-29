@@ -14,7 +14,7 @@ export function ResultsPanel({ application }: Props) {
 
   const hoofdaanvrager = application.applicants.find((a) => a.role === 'hoofdaanvrager');
   const dob = hoofdaanvrager?.personal.dateOfBirth ?? '';
-  const ovb = calculateOVB(application.mortgage.propertyValue, dob, true);
+  const ovb = calculateOVB(application.mortgage.propertyValue, dob, true, application.mortgage.nhgYear ?? 2026);
   const bijkomend = calculateBijkomendeKosten(
     application.mortgage.propertyValue,
     application.mortgage.requestedAmount,
@@ -125,7 +125,8 @@ export function ResultsPanel({ application }: Props) {
       <div className="border border-gray-200 rounded-xl overflow-hidden">
         <div className={`px-4 py-3 ${nhg.eligible ? 'bg-green-600' : 'bg-gray-400'}`}>
           <h4 className="text-white font-semibold text-sm">
-            NHG – Nationale Hypotheek Garantie {nhg.eligible ? '(van toepassing)' : '(niet van toepassing)'}
+            NHG {application.mortgage.nhgYear ?? 2026} – Nationale Hypotheek Garantie{' '}
+            {nhg.eligible ? '(van toepassing)' : '(niet van toepassing)'}
           </h4>
         </div>
         <div className="p-4">

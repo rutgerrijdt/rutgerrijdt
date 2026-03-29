@@ -1,7 +1,7 @@
 'use client';
 
 import type { MortgageDetails } from '@/lib/types';
-import { NHG_LIMIT_2025, NHG_LIMIT_ENERGY_2025 } from '@/lib/nhg';
+import { NHG_NORMS } from '@/lib/nhg';
 import { formatEuro } from '@/lib/utils';
 
 interface Props {
@@ -25,7 +25,8 @@ export function MortgageForm({ data, onChange }: Props) {
       ? ((data.requestedAmount / data.propertyValue) * 100).toFixed(1)
       : '0.0';
 
-  const nhgLimit = data.includeEnergyMeasures ? NHG_LIMIT_ENERGY_2025 : NHG_LIMIT_2025;
+  const norms = NHG_NORMS[data.nhgYear ?? 2026];
+  const nhgLimit = data.includeEnergyMeasures ? norms.limitEnergy : norms.limit;
   const nhgPossible = data.propertyValue <= nhgLimit && data.propertyValue > 0;
 
   return (
@@ -135,17 +136,47 @@ export function MortgageForm({ data, onChange }: Props) {
       <div className="border border-gray-200 rounded-xl p-4 space-y-3">
         <h4 className="text-sm font-semibold text-gray-700">NHG – Nationale Hypotheek Garantie</h4>
 
-        <div className="flex items-center gap-3">
-          <input
-            type="checkbox"
-            id="nhg"
-            checked={data.nhgDesired}
-            onChange={(e) => set('nhgDesired', e.target.checked)}
-            className="w-4 h-4 text-blue-600 rounded"
-          />
-          <label htmlFor="nhg" className="text-sm text-gray-700">
-            NHG aanvragen
-          </label>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="nhg"
+              checked={data.nhgDesired}
+              onChange={(e) => set('nhgDesired', e.target.checked)}
+              className="w-4 h-4 text-blue-600 rounded"
+            />
+            <label htmlFor="nhg" className="text-sm text-gray-700">
+              NHG aanvragen
+            </label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Normjaar:</label>
+            <div className="flex rounded-lg overflow-hidden border border-gray-200">
+              {([2025, 2026] as const).map((year) => (
+                <button
+                  key={year}
+                  onClick={() => set('nhgYear', year)}
+                  className={`px-3 py-1 text-sm font-medium transition ${
+                    (data.nhgYear ?? 2026) === year
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {year}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="text-xs text-gray-500 grid grid-cols-2 gap-2 bg-gray-50 rounded-lg p-2">
+          <div>
+            <span className="font-medium">2025:</span> max. {formatEuro(NHG_NORMS[2025].limit)} &middot; energie {formatEuro(NHG_NORMS[2025].limitEnergy)}
+          </div>
+          <div>
+            <span className="font-medium">2026:</span> max. {formatEuro(NHG_NORMS[2026].limit)} &middot; energie {formatEuro(NHG_NORMS[2026].limitEnergy)}
+          </div>
         </div>
 
         {data.nhgDesired && (
@@ -159,7 +190,7 @@ export function MortgageForm({ data, onChange }: Props) {
                 className="w-4 h-4 text-green-600 rounded"
               />
               <label htmlFor="energy" className="text-sm text-gray-700">
-                Energiebesparende maatregelen (max. {formatEuro(NHG_LIMIT_ENERGY_2025)})
+                Energiebesparende maatregelen (max. {formatEuro(norms.limitEnergy)})
               </label>
             </div>
 

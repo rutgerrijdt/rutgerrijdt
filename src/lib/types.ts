@@ -77,6 +77,7 @@ export interface MortgageDetails {
   interestRate: number;         // Rente (decimal, e.g. 0.042 = 4.2%)
   loanTerm: number;             // Looptijd (years, default 30)
   nhgDesired: boolean;          // NHG gewenst
+  nhgYear: 2025 | 2026;         // NHG normjaar
   includeEnergyMeasures: boolean; // Energiebesparende maatregelen (voor hogere NHG grens)
   existingMortgage: number;     // Bestaande hypotheek (bij verbouw)
 }
@@ -196,6 +197,7 @@ export function emptyMortgageDetails(): MortgageDetails {
     interestRate: 0.042,
     loanTerm: 30,
     nhgDesired: true,
+    nhgYear: 2026,
     includeEnergyMeasures: false,
     existingMortgage: 0,
   };
