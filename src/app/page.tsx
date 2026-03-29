@@ -5,18 +5,20 @@ import type { Application, Applicant } from '@/lib/types';
 import { emptyMortgageDetails, emptyPersonalInfo } from '@/lib/types';
 import { loadApplications, saveApplication, deleteApplication } from '@/lib/utils';
 import { IncomeStep } from '@/components/IncomeStep';
+import { DebtForm } from '@/components/DebtForm';
 import { MortgageForm } from '@/components/MortgageForm';
 import { DocumentUpload } from '@/components/DocumentUpload';
 import { ResultsPanel } from '@/components/ResultsPanel';
 
 // ---- Types ----
-type Step = 'inkomen' | 'hypotheek' | 'documenten' | 'resultaat';
+type Step = 'inkomen' | 'schulden' | 'hypotheek' | 'documenten' | 'resultaat';
 
 const STEPS: { id: Step; label: string; icon: string }[] = [
-  { id: 'inkomen', label: 'Aanvrager & inkomen', icon: '👤' },
-  { id: 'hypotheek', label: 'Hypotheek', icon: '🏠' },
-  { id: 'documenten', label: 'Documenten', icon: '📎' },
-  { id: 'resultaat', label: 'Berekening', icon: '📊' },
+  { id: 'inkomen',   label: 'Aanvrager & inkomen', icon: '👤' },
+  { id: 'schulden',  label: 'Schulden',             icon: '💳' },
+  { id: 'hypotheek', label: 'Hypotheek',            icon: '🏠' },
+  { id: 'documenten',label: 'Documenten',           icon: '📎' },
+  { id: 'resultaat', label: 'Berekening',           icon: '📊' },
 ];
 
 // ---- Create empty application ----
@@ -41,6 +43,7 @@ function createApplication(): Application {
     status: 'concept',
     applicants: [hoofdaanvrager],
     mortgage: emptyMortgageDetails(),
+    debts: [],
     documents: [],
     notes: '',
   };
@@ -288,6 +291,15 @@ export default function Home() {
             <IncomeStep
               applicants={current.applicants}
               onChange={(applicants) => updateCurrent({ applicants })}
+            />
+          )}
+
+          {step === 'schulden' && (
+            <DebtForm
+              debts={current.debts ?? []}
+              onChange={(debts) => updateCurrent({ debts })}
+              interestRate={current.mortgage.interestRate}
+              loanTerm={current.mortgage.loanTerm}
             />
           )}
 

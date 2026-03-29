@@ -1,23 +1,23 @@
 // ============================================================
 // GHF – Gedragscode Hypothecaire Financieringen
-// Financieringslastnormen 2025
+// Financieringslastnormen 2025 & 2026
 // ============================================================
 
 import type { IncomeSource, EntrepreneurIncome, GHFResult, MortgageDetails } from './types';
 
-// Toetsrente: min 5% voor rentevaste periodes < 10 jaar (NIBUD/GHF 2025)
+// Toetsrente: min 5% voor rentevaste periodes < 10 jaar (NIBUD/GHF)
 export const MIN_TOETS_RENTE = 0.05;
 
-// ---- Financieringslasttabel 2025 (gebaseerd op NIBUD-normen) ----
-// Percentage van bruto jaarinkomen dat maximaal aan woonlasten mag worden besteed
-// Bron: GHF bijlage A 2025 (vereenvoudigde versie)
+export type GHFYear = 2025 | 2026;
+
 interface FinancingLoadRow {
   minIncome: number;
   maxIncome: number;
-  percentage: number; // bij toetsrente 5%
+  percentage: number;
 }
 
-const FINANCING_LOAD_TABLE: FinancingLoadRow[] = [
+// ---- Financieringslasttabel 2025 (NIBUD-normen) ----
+const FINANCING_LOAD_TABLE_2025: FinancingLoadRow[] = [
   { minIncome: 0,      maxIncome: 20000,   percentage: 13.0 },
   { minIncome: 20001,  maxIncome: 22000,   percentage: 16.0 },
   { minIncome: 22001,  maxIncome: 24000,   percentage: 18.0 },
@@ -38,14 +38,46 @@ const FINANCING_LOAD_TABLE: FinancingLoadRow[] = [
   { minIncome: 110001, maxIncome: Infinity, percentage: 27.5 },
 ];
 
-export function getFinancingLoadPercentage(grossAnnualIncome: number): number {
-  for (const row of FINANCING_LOAD_TABLE) {
+// ---- Financieringslasttabel 2026 (NIBUD-normen, gepubliceerd Q4 2025) ----
+// Hogere percentages door lagere energielasten en hogere inkomensschijven
+const FINANCING_LOAD_TABLE_2026: FinancingLoadRow[] = [
+  { minIncome: 0,      maxIncome: 20000,   percentage: 13.5 },
+  { minIncome: 20001,  maxIncome: 22000,   percentage: 16.5 },
+  { minIncome: 22001,  maxIncome: 24000,   percentage: 18.5 },
+  { minIncome: 24001,  maxIncome: 26000,   percentage: 19.5 },
+  { minIncome: 26001,  maxIncome: 28000,   percentage: 20.5 },
+  { minIncome: 28001,  maxIncome: 30000,   percentage: 21.5 },
+  { minIncome: 30001,  maxIncome: 33000,   percentage: 22.5 },
+  { minIncome: 33001,  maxIncome: 36000,   percentage: 23.0 },
+  { minIncome: 36001,  maxIncome: 40000,   percentage: 23.5 },
+  { minIncome: 40001,  maxIncome: 45000,   percentage: 24.0 },
+  { minIncome: 45001,  maxIncome: 50000,   percentage: 24.5 },
+  { minIncome: 50001,  maxIncome: 55000,   percentage: 25.0 },
+  { minIncome: 55001,  maxIncome: 60000,   percentage: 25.5 },
+  { minIncome: 60001,  maxIncome: 70000,   percentage: 26.0 },
+  { minIncome: 70001,  maxIncome: 80000,   percentage: 26.5 },
+  { minIncome: 80001,  maxIncome: 90000,   percentage: 27.0 },
+  { minIncome: 90001,  maxIncome: 110000,  percentage: 27.5 },
+  { minIncome: 110001, maxIncome: Infinity, percentage: 28.0 },
+];
+
+const GHF_TABLES: Record<GHFYear, FinancingLoadRow[]> = {
+  2025: FINANCING_LOAD_TABLE_2025,
+  2026: FINANCING_LOAD_TABLE_2026,
+};
+
+export function getFinancingLoadPercentage(grossAnnualIncome: number, year: GHFYear = 2026): number {
+  const table = GHF_TABLES[year];
+  for (const row of table) {
     if (grossAnnualIncome >= row.minIncome && grossAnnualIncome <= row.maxIncome) {
       return row.percentage;
     }
   }
-  return 27.5;
+  return year === 2026 ? 28.0 : 27.5;
 }
+
+// Exporteer tabellen voor gebruik in UI (vergelijkingstabel)
+export { GHF_TABLES, FINANCING_LOAD_TABLE_2025, FINANCING_LOAD_TABLE_2026 };
 
 // ---- Toetsrente bepalen ----
 export function getToetsRente(fixedRatePeriod: number, actualRate: number): number {
@@ -119,7 +151,8 @@ export function checkBusinessAge(income: EntrepreneurIncome): { ok: boolean; yea
 export function calculateGHF(
   incomeSources: IncomeSource[],
   partnerIncomeSources: IncomeSource[],
-  mortgage: MortgageDetails
+  mortgage: MortgageDetails,
+  totalMonthlyDebts: number = 0
 ): GHFResult {
   // Totaal toetsinkomen aanvrager(s)
   const applicantIncome = incomeSources.reduce(
@@ -132,8 +165,9 @@ export function calculateGHF(
   );
   const totalIncome = applicantIncome + partnerIncome;
 
-  // Financieringslastpercentage
-  const financingLoadPercentage = getFinancingLoadPercentage(totalIncome);
+  // Financieringslastpercentage (jaar uit hypotheekgegevens of default 2026)
+  const ghfYear: GHFYear = mortgage.ghfYear ?? 2026;
+  const financingLoadPercentage = getFinancingLoadPercentage(totalIncome, ghfYear);
 
   // Toetsrente
   const toetsRente = getToetsRente(mortgage.fixedRatePeriod, mortgage.interestRate);
@@ -142,9 +176,13 @@ export function calculateGHF(
   const maxAnnualHousingCosts = totalIncome * (financingLoadPercentage / 100);
   const maxMonthlyPayment = maxAnnualHousingCosts / 12;
 
+  // Schulden verlagen de beschikbare maandruimte (GHF art. 6)
+  const maxMonthlyPaymentNet = Math.max(0, maxMonthlyPayment - totalMonthlyDebts);
+
   // Max hypotheek via toetsrente (annuïtair)
   const factor = annuityFactor(toetsRente, mortgage.loanTerm);
-  const maxMortgage = Math.round(maxMonthlyPayment / factor);
+  const maxMortgageWithoutDebts = Math.round(maxMonthlyPayment / factor);
+  const maxMortgage = Math.round(maxMonthlyPaymentNet / factor);
 
   // LTV (Loan-to-Value)
   const ltvRatio = mortgage.propertyValue > 0
@@ -157,7 +195,9 @@ export function calculateGHF(
     toetsRente,
     maxAnnualHousingCosts: Math.round(maxAnnualHousingCosts),
     maxMonthlyPayment: Math.round(maxMonthlyPayment),
+    maxMonthlyPaymentNet: Math.round(maxMonthlyPaymentNet),
     maxMortgage,
+    maxMortgageWithoutDebts,
     ltvRatio: Math.round(ltvRatio * 10) / 10,
     ltvAllowed: ltvRatio <= 100,
   };

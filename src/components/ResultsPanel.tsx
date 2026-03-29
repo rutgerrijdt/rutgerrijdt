@@ -3,6 +3,8 @@
 import type { Application, CalculationResult } from '@/lib/types';
 import { runFullCalculation, formatEuro, formatPercent } from '@/lib/utils';
 import { calculateBijkomendeKosten, calculateOVB } from '@/lib/nhg';
+import { StressTest } from './StressTest';
+import { ScenarioComparison } from './ScenarioComparison';
 
 interface Props {
   application: Application;
@@ -10,7 +12,7 @@ interface Props {
 
 export function ResultsPanel({ application }: Props) {
   const result: CalculationResult = runFullCalculation(application);
-  const { ghf, nhg, actualPayment, feasible, warnings, advice } = result;
+  const { ghf, nhg, actualPayment, feasible, warnings, advice, totalMonthlyDebts, debtMortgageImpact } = result;
 
   const hoofdaanvrager = application.applicants.find((a) => a.role === 'hoofdaanvrager');
   const dob = hoofdaanvrager?.personal.dateOfBirth ?? '';
@@ -213,6 +215,64 @@ export function ResultsPanel({ application }: Props) {
         </div>
       )}
 
+      {/* Schulden impact */}
+      {totalMonthlyDebts > 0 && (
+        <div className="border border-orange-200 rounded-xl overflow-hidden">
+          <div className="bg-orange-500 px-4 py-3">
+            <h4 className="text-white font-semibold text-sm">Impact schulden op maximale hypotheek</h4>
+          </div>
+          <div className="p-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <ResultCard label="Maandlast schulden" value={formatEuro(totalMonthlyDebts)} sub="per maand" alert />
+              <ResultCard label="Max. hypotheek (zonder schulden)" value={formatEuro(ghf.maxMortgageWithoutDebts)} sub="referentie" />
+              <ResultCard label="Max. hypotheek (na schulden)" value={formatEuro(ghf.maxMortgage)} sub="na aftrek" highlight />
+              <ResultCard label="Verlaging door schulden" value={`−${formatEuro(debtMortgageImpact)}`} sub="impact" alert />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Eigen middelen */}
+      {application.mortgage.propertyValue > 0 && application.mortgage.requestedAmount > 0 && (
+        <div className="border border-gray-200 rounded-xl overflow-hidden">
+          <div className="bg-teal-600 px-4 py-3">
+            <h4 className="text-white font-semibold text-sm">Eigen middelen – benodigde inbreng</h4>
+          </div>
+          <div className="p-4">
+            {(() => {
+              const eigenMiddelen = application.mortgage.propertyValue - application.mortgage.requestedAmount;
+              const totaalNodig = eigenMiddelen + bijkomend.total;
+              return (
+                <div>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-3">
+                    <ResultCard label="Koopsom" value={formatEuro(application.mortgage.propertyValue)} />
+                    <ResultCard label="Hypotheek" value={formatEuro(application.mortgage.requestedAmount)} />
+                    <ResultCard
+                      label="Eigen middelen (verschil)"
+                      value={formatEuro(Math.max(0, eigenMiddelen))}
+                      highlight={eigenMiddelen > 0}
+                      alert={eigenMiddelen < 0}
+                    />
+                    <ResultCard
+                      label="Bijkomende kosten"
+                      value={formatEuro(bijkomend.total)}
+                      sub="notaris, OVB, etc."
+                    />
+                  </div>
+                  <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 flex justify-between items-center">
+                    <span className="text-sm font-semibold text-teal-800">Totaal benodigde eigen middelen</span>
+                    <span className="text-xl font-bold text-teal-700">{formatEuro(Math.max(0, totaalNodig))}</span>
+                  </div>
+                  {ovb.starterVrijstelling && (
+                    <p className="text-xs text-green-600 mt-2">✓ Startersvrijstelling toegepast (geen overdrachtsbelasting)</p>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
       {/* Advice */}
       {advice.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-1">
@@ -226,8 +286,19 @@ export function ResultsPanel({ application }: Props) {
         </div>
       )}
 
+      {/* Rentestresstest */}
+      <StressTest application={application} currentMonthly={actualPayment.firstMonth} />
+
+      {/* Scenariovergeliking */}
+      {application.mortgage.requestedAmount > 0 && (
+        <ScenarioComparison
+          baseMortgage={application.mortgage}
+          propertyValue={application.mortgage.propertyValue}
+        />
+      )}
+
       <p className="text-xs text-gray-400 text-center">
-        Deze berekening is indicatief en gebaseerd op GHF-normen 2025. Definitieve acceptatie is aan de geldverstrekker.
+        Deze berekening is indicatief en gebaseerd op GHF/NHG-normen 2025–2026. Definitieve acceptatie is aan de geldverstrekker.
       </p>
     </div>
   );

@@ -10,6 +10,7 @@ import type {
 } from './types';
 import { calculateGHF, calculateActualMonthlyPayment } from './ghf';
 import { checkNHG } from './nhg';
+import { totalMonthlyObligations, debtImpactOnMortgage } from './debts';
 
 // ---- Format euro ----
 export function formatEuro(amount: number, decimals = 0): string {
@@ -46,7 +47,11 @@ export function runFullCalculation(application: Application): CalculationResult 
       .filter((a) => a.role === 'medeaanvrager')
       .flatMap((a) => a.incomeSources);
 
-  const ghf = calculateGHF(hoofdSources, medeSources, mortgage);
+  const debts = application.debts ?? [];
+  const totalMonthlyDebts = totalMonthlyObligations(debts);
+  const debtMortgageImpact = debtImpactOnMortgage(totalMonthlyDebts, mortgage.interestRate, mortgage.loanTerm);
+
+  const ghf = calculateGHF(hoofdSources, medeSources, mortgage, totalMonthlyDebts);
   const nhg = checkNHG(mortgage);
 
   const actualPayment = calculateActualMonthlyPayment(
@@ -111,7 +116,14 @@ export function runFullCalculation(application: Application): CalculationResult 
     ghf.ltvAllowed &&
     mortgage.requestedAmount > 0;
 
-  return { ghf, nhg, actualPayment, feasible, warnings, advice };
+  // Debt warning
+  if (totalMonthlyDebts > 0) {
+    warnings.push(
+      `Maandelijkse schuldenlasten van ${formatEuro(totalMonthlyDebts)} verlagen de maximale hypotheek met ${formatEuro(debtMortgageImpact)}.`
+    );
+  }
+
+  return { ghf, nhg, actualPayment, feasible, warnings, advice, totalMonthlyDebts, debtMortgageImpact };
 }
 
 // ---- LocalStorage persistence ----

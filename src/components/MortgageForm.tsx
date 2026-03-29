@@ -2,6 +2,7 @@
 
 import type { MortgageDetails } from '@/lib/types';
 import { NHG_NORMS } from '@/lib/nhg';
+import { getFinancingLoadPercentage } from '@/lib/ghf';
 import { formatEuro } from '@/lib/utils';
 
 interface Props {
@@ -67,6 +68,44 @@ export function MortgageForm({ data, onChange }: Props) {
             {parseFloat(ltv) > 100 && ' — Overschrijdt maximum van 100%'}
           </div>
         )}
+      </div>
+
+      {/* GHF year selector */}
+      <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+        <h4 className="text-sm font-semibold text-gray-700">GHF – Financieringslastnormen</h4>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Normjaar:</label>
+            <div className="flex rounded-lg overflow-hidden border border-gray-200">
+              {([2025, 2026] as const).map((year) => (
+                <button
+                  key={year}
+                  onClick={() => set('ghfYear', year)}
+                  className={`px-3 py-1 text-sm font-medium transition ${
+                    (data.ghfYear ?? 2026) === year
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {year}
+                </button>
+              ))}
+            </div>
+          </div>
+          {data.requestedAmount === 0 && (
+            <p className="text-xs text-gray-400">Vul hypotheekbedrag en inkomen in om de financieringslast te zien.</p>
+          )}
+        </div>
+        <div className="text-xs text-gray-500 bg-gray-50 rounded-lg p-2 grid grid-cols-2 gap-2">
+          <div>
+            <span className="font-medium">2025 norm €45k inkomen:</span>{' '}
+            {getFinancingLoadPercentage(45000, 2025)}% financieringslast
+          </div>
+          <div>
+            <span className="font-medium">2026 norm €45k inkomen:</span>{' '}
+            {getFinancingLoadPercentage(45000, 2026)}% financieringslast
+          </div>
+        </div>
       </div>
 
       {/* Mortgage details */}

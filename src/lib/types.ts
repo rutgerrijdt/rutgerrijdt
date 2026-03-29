@@ -76,6 +76,7 @@ export interface MortgageDetails {
   fixedRatePeriod: number;      // Rentevaste periode (years)
   interestRate: number;         // Rente (decimal, e.g. 0.042 = 4.2%)
   loanTerm: number;             // Looptijd (years, default 30)
+  ghfYear: 2025 | 2026;         // GHF normjaar (financieringslastnormen)
   nhgDesired: boolean;          // NHG gewenst
   nhgYear: 2025 | 2026;         // NHG normjaar
   includeEnergyMeasures: boolean; // Energiebesparende maatregelen (voor hogere NHG grens)
@@ -102,6 +103,7 @@ export interface Application {
   status: ApplicationStatus;
   applicants: Applicant[];
   mortgage: MortgageDetails;
+  debts: import('./debts').DebtItem[];
   documents: UploadedDocument[];
   notes: string;
 }
@@ -112,10 +114,12 @@ export interface GHFResult {
   financingLoadPercentage: number;
   toetsRente: number;
   maxAnnualHousingCosts: number;
-  maxMonthlyPayment: number;
-  maxMortgage: number;
-  ltvRatio: number;           // Loan-to-value ratio
-  ltvAllowed: boolean;        // Max 100% LTV
+  maxMonthlyPayment: number;        // Zonder schulden
+  maxMonthlyPaymentNet: number;     // Na aftrek maandlasten schulden
+  maxMortgage: number;              // Na aftrek schulden
+  maxMortgageWithoutDebts: number;  // Zonder schulden (referentie)
+  ltvRatio: number;
+  ltvAllowed: boolean;
 }
 
 export interface NHGResult {
@@ -142,6 +146,8 @@ export interface CalculationResult {
   feasible: boolean;
   warnings: string[];
   advice: string[];
+  totalMonthlyDebts: number;
+  debtMortgageImpact: number;
 }
 
 // ---- Default empty objects ----
@@ -196,6 +202,7 @@ export function emptyMortgageDetails(): MortgageDetails {
     fixedRatePeriod: 10,
     interestRate: 0.042,
     loanTerm: 30,
+    ghfYear: 2026,
     nhgDesired: true,
     nhgYear: 2026,
     includeEnergyMeasures: false,
