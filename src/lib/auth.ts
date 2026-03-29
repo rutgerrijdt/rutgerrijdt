@@ -36,27 +36,36 @@ function saveAccounts(accounts: ConsumerAccount[]): void {
   localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
 }
 
-export function registerConsumer(
+/** Check whether a consumer account exists for the given email. */
+export function getConsumerAccount(email: string): ConsumerAccount | null {
+  const normalizedEmail = email.trim().toLowerCase();
+  return getAccounts().find((a) => a.email === normalizedEmail) ?? null;
+}
+
+/**
+ * Advisor creates (or overwrites) a consumer account.
+ * Call this from the advisor dashboard when setting up portal access for a client.
+ */
+export function createConsumerAccount(
   email: string,
   password: string,
   name: string
 ): { success: true; account: ConsumerAccount } | { success: false; error: string } {
-  const accounts = getAccounts();
-  const normalizedEmail = email.trim().toLowerCase();
+  if (!email.trim()) return { success: false, error: 'E-mailadres is verplicht.' };
+  if (!password.trim()) return { success: false, error: 'Wachtwoord is verplicht.' };
+  if (password.length < 6) return { success: false, error: 'Wachtwoord moet minimaal 6 tekens zijn.' };
 
-  if (accounts.find((a) => a.email === normalizedEmail)) {
-    return { success: false, error: 'Dit e-mailadres is al geregistreerd.' };
-  }
+  const normalizedEmail = email.trim().toLowerCase();
+  const accounts = getAccounts().filter((a) => a.email !== normalizedEmail);
 
   const account: ConsumerAccount = {
     email: normalizedEmail,
-    name: name.trim(),
+    name: name.trim() || normalizedEmail,
     passwordHash: simpleHash(password),
     createdAt: new Date().toISOString(),
   };
 
   saveAccounts([...accounts, account]);
-  setCurrentConsumer(account);
   return { success: true, account };
 }
 

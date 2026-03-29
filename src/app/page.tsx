@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Application, Applicant } from '@/lib/types';
 import { emptyMortgageDetails, emptyPersonalInfo } from '@/lib/types';
 import { loadApplications, saveApplication, deleteApplication } from '@/lib/utils';
+import { createConsumerAccount, getConsumerAccount } from '@/lib/auth';
 import { IncomeStep } from '@/components/IncomeStep';
 import { DebtForm } from '@/components/DebtForm';
 import { MortgageForm } from '@/components/MortgageForm';
@@ -14,14 +15,13 @@ import { ResultsPanel } from '@/components/ResultsPanel';
 type Step = 'inkomen' | 'schulden' | 'hypotheek' | 'documenten' | 'resultaat';
 
 const STEPS: { id: Step; label: string; icon: string }[] = [
-  { id: 'inkomen',   label: 'Aanvrager & inkomen', icon: '\u{1f464}' },
-  { id: 'schulden',  label: 'Schulden',             icon: '\u{1f4b3}' },
-  { id: 'hypotheek', label: 'Hypotheek',            icon: '\u{1f3e0}' },
-  { id: 'documenten',label: 'Documenten',           icon: '\u{1f4ce}' },
-  { id: 'resultaat', label: 'Berekening',           icon: '\u{1f4ca}' },
+  { id: 'inkomen',    label: 'Aanvrager & inkomen', icon: '\u{1f464}' },
+  { id: 'schulden',   label: 'Schulden',            icon: '\u{1f4b3}' },
+  { id: 'hypotheek',  label: 'Hypotheek',           icon: '\u{1f3e0}' },
+  { id: 'documenten', label: 'Documenten',          icon: '\u{1f4ce}' },
+  { id: 'resultaat',  label: 'Berekening',          icon: '\u{1f4ca}' },
 ];
 
-// ---- Create empty application ----
 function createApplication(): Application {
   const id =
     typeof crypto !== 'undefined' && crypto.randomUUID
@@ -49,6 +49,178 @@ function createApplication(): Application {
 }
 
 // ============================================================
+// Consumer account modal (for advisor)
+// ============================================================
+function ConsumerAccountModal({
+  app,
+  onClose,
+}: {
+  app: Application;
+  onClose: () => void;
+}) {
+  const hoofdaanvrager = app.applicants.find((a) => a.role === 'hoofdaanvrager');
+  const prefillEmail = hoofdaanvrager?.personal.email?.trim() ?? '';
+  const prefillName =
+    `${hoofdaanvrager?.personal.firstName ?? ''} ${hoofdaanvrager?.personal.lastName ?? ''}`.trim();
+
+  const [email, setEmail] = useState(prefillEmail);
+  const [name, setName] = useState(prefillName);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
+
+  const existingAccount = prefillEmail ? getConsumerAccount(prefillEmail) : null;
+  const [hasExisting] = useState(!!existingAccount);
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!email.trim()) {
+      setError('Vul een e-mailadres in.');
+      return;
+    }
+
+    const result = createConsumerAccount(email, password, name);
+    if (!result.success) {
+      setError(result.error);
+      return;
+    }
+
+    setSuccess(true);
+  };
+
+  if (success) {
+    return (
+      <ModalShell onClose={onClose}>
+        <div className="text-center py-4">
+          <div className="text-4xl mb-3">✅</div>
+          <h3 className="font-semibold text-gray-900 mb-1">
+            {hasExisting ? 'Wachtwoord bijgewerkt' : 'Account aangemaakt'}
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            De consument kan nu inloggen op het portaal met:
+          </p>
+          <div className="bg-gray-50 rounded-xl p-4 text-sm text-left space-y-1">
+            <div>
+              <span className="text-gray-500">E-mail: </span>
+              <span className="font-medium text-gray-900">{email.trim().toLowerCase()}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">Wachtwoord: </span>
+              <span className="font-medium text-gray-900">{password}</span>
+            </div>
+          </div>
+          <p className="text-xs text-gray-400 mt-3">Deel deze gegevens veilig met de consument.</p>
+          <button
+            onClick={onClose}
+            className="mt-5 w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+          >
+            Sluiten
+          </button>
+        </div>
+      </ModalShell>
+    );
+  }
+
+  return (
+    <ModalShell onClose={onClose}>
+      <h3 className="font-semibold text-gray-900 mb-1">
+        {hasExisting ? 'Portaalaccount bijwerken' : 'Portaalaccount aanmaken'}
+      </h3>
+      <p className="text-xs text-gray-500 mb-5">
+        {hasExisting
+          ? 'Stel een nieuw wachtwoord in voor de consument.'
+          : 'Maak inloggegevens aan voor de consument zodat zij hun aanvraag kunnen volgen.'}
+      </p>
+
+      <form onSubmit={handleSave} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Naam consument</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Volledige naam"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            E-mailadres <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="consument@email.nl"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {hasExisting ? 'Nieuw wachtwoord' : 'Wachtwoord'}{' '}
+            <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Minimaal 6 tekens"
+            autoComplete="off"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <p className="text-xs text-gray-400 mt-1">
+            Zichtbaar zodat u het kunt doorgeven aan de consument.
+          </p>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2">
+            {error}
+          </div>
+        )}
+
+        <div className="flex gap-2 pt-1">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 border border-gray-200 text-gray-600 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
+          >
+            Annuleren
+          </button>
+          <button
+            type="submit"
+            className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition"
+          >
+            {hasExisting ? 'Wachtwoord instellen' : 'Account aanmaken'}
+          </button>
+        </div>
+      </form>
+    </ModalShell>
+  );
+}
+
+function ModalShell({ children, onClose }: { children: React.ReactNode; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 relative">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-lg leading-none"
+          aria-label="Sluiten"
+        >
+          \u00d7
+        </button>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // Main Page
 // ============================================================
 export default function Home() {
@@ -57,14 +229,34 @@ export default function Home() {
   const [current, setCurrent] = useState<Application | null>(null);
   const [step, setStep] = useState<Step>('inkomen');
   const [saved, setSaved] = useState(false);
+  const [accountModalApp, setAccountModalApp] = useState<Application | null>(null);
+  // Track which applications have a consumer account (re-evaluate after modal closes)
+  const [accountEmails, setAccountEmails] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    setApplications(loadApplications());
+    const apps = loadApplications();
+    setApplications(apps);
+    const emails = new Set<string>();
+    apps.forEach((app) => {
+      const email = app.applicants.find((a) => a.role === 'hoofdaanvrager')?.personal.email?.trim().toLowerCase();
+      if (email && getConsumerAccount(email)) emails.add(email);
+    });
+    setAccountEmails(emails);
+  }, []);
+
+  const refreshAccountEmails = useCallback((apps: Application[]) => {
+    const emails = new Set<string>();
+    apps.forEach((app) => {
+      const email = app.applicants.find((a) => a.role === 'hoofdaanvrager')?.personal.email?.trim().toLowerCase();
+      if (email && getConsumerAccount(email)) emails.add(email);
+    });
+    setAccountEmails(emails);
   }, []);
 
   const persistSave = useCallback((app: Application) => {
     saveApplication(app);
-    setApplications(loadApplications());
+    const apps = loadApplications();
+    setApplications(apps);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }, []);
@@ -95,7 +287,9 @@ export default function Home() {
   const handleDelete = (id: string) => {
     if (!confirm('Weet u zeker dat u deze aanvraag wilt verwijderen?')) return;
     deleteApplication(id);
-    setApplications(loadApplications());
+    const apps = loadApplications();
+    setApplications(apps);
+    refreshAccountEmails(apps);
   };
 
   const handleSubmit = () => {
@@ -108,6 +302,16 @@ export default function Home() {
   if (view === 'list') {
     return (
       <div className="min-h-screen bg-slate-50">
+        {accountModalApp && (
+          <ConsumerAccountModal
+            app={accountModalApp}
+            onClose={() => {
+              setAccountModalApp(null);
+              refreshAccountEmails(applications);
+            }}
+          />
+        )}
+
         {/* Header */}
         <header className="bg-white border-b border-gray-200 shadow-sm">
           <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -157,14 +361,16 @@ export default function Home() {
                 const naam = hoofdaanvrager
                   ? `${hoofdaanvrager.personal.firstName} ${hoofdaanvrager.personal.lastName}`.trim() || 'Naamloos'
                   : 'Naamloos';
-                const consumerEmail = hoofdaanvrager?.personal.email?.trim();
+                const consumerEmail = hoofdaanvrager?.personal.email?.trim().toLowerCase() ?? '';
+                const hasAccount = consumerEmail ? accountEmails.has(consumerEmail) : false;
+
                 return (
                   <div
                     key={app.id}
                     className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition"
                   >
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <h3 className="font-semibold text-gray-900">{naam}</h3>
                         <div className="flex items-center gap-3 mt-1 flex-wrap">
                           <StatusBadge status={app.status} />
@@ -201,20 +407,39 @@ export default function Home() {
                             </span>
                           )}
                           {app.documents.length > 0 && (
-                            <span>{app.documents.length} document{app.documents.length !== 1 ? 'en' : ''}</span>
+                            <span>
+                              {app.documents.length} document{app.documents.length !== 1 ? 'en' : ''}
+                            </span>
                           )}
                         </div>
-                        {consumerEmail && (
-                          <div className="mt-2 flex items-center gap-1.5 text-xs text-blue-600">
-                            <span>\u{1f517}</span>
-                            <span>
-                              Consumentenportaal: log in met{' '}
-                              <span className="font-medium">{consumerEmail}</span>
-                            </span>
-                          </div>
-                        )}
+
+                        {/* Consumer account status */}
+                        <div className="mt-3 flex items-center gap-2">
+                          {hasAccount ? (
+                            <>
+                              <span className="inline-flex items-center gap-1 text-xs text-green-700 bg-green-50 border border-green-200 rounded-full px-2.5 py-0.5">
+                                \u2713 Portaalaccount actief
+                              </span>
+                              <span className="text-xs text-gray-400">{consumerEmail}</span>
+                              <button
+                                onClick={() => setAccountModalApp(app)}
+                                className="text-xs text-gray-500 hover:text-blue-600 underline"
+                              >
+                                Wachtwoord wijzigen
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => setAccountModalApp(app)}
+                              className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2.5 py-0.5 hover:bg-blue-100 transition"
+                            >
+                              + Portaalaccount aanmaken
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex flex-col gap-2 ml-4">
+
+                      <div className="flex flex-col gap-2 ml-4 shrink-0">
                         <button
                           onClick={() => openExisting(app)}
                           className="px-3 py-1.5 bg-blue-100 text-blue-700 text-sm rounded-lg hover:bg-blue-200 font-medium transition"
@@ -309,7 +534,6 @@ export default function Home() {
               onChange={(applicants) => updateCurrent({ applicants })}
             />
           )}
-
           {step === 'schulden' && (
             <DebtForm
               debts={current.debts ?? []}
@@ -318,21 +542,18 @@ export default function Home() {
               loanTerm={current.mortgage.loanTerm}
             />
           )}
-
           {step === 'hypotheek' && (
             <MortgageForm
               data={current.mortgage}
               onChange={(mortgage) => updateCurrent({ mortgage })}
             />
           )}
-
           {step === 'documenten' && (
             <DocumentUpload
               documents={current.documents}
               onChange={(documents) => updateCurrent({ documents })}
             />
           )}
-
           {step === 'resultaat' && <ResultsPanel application={current} />}
         </div>
 
@@ -360,7 +581,6 @@ export default function Home() {
           >
             \u2190 Vorige
           </button>
-
           <div className="flex gap-2">
             {step === 'resultaat' && current.status === 'concept' && (
               <button
