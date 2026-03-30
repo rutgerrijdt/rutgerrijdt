@@ -6,6 +6,7 @@ import {
   emptyBalans,
   emptyWinstVerlies,
   berekenJaarcijfers,
+  BEDRIJFSVORM_INFO,
   type Bedrijfsgegevens,
   type Balans,
   type WinstVerlies,
@@ -14,6 +15,7 @@ import { StepBedrijfsgegevens } from '@/components/jaarcijfers/StepBedrijfsgegev
 import { StepBalans } from '@/components/jaarcijfers/StepBalans';
 import { StepWinstVerlies } from '@/components/jaarcijfers/StepWinstVerlies';
 import { StepAnalyse } from '@/components/jaarcijfers/StepAnalyse';
+import { RapportUpload, type ExtractieData } from '@/components/jaarcijfers/RapportUpload';
 
 type Step = 'bedrijfsgegevens' | 'balans' | 'winstVerlies' | 'analyse';
 
@@ -29,6 +31,7 @@ export default function JaarcijfersPage() {
   const [bedrijfsgegevens, setBedrijfsgegevens] = useState<Bedrijfsgegevens>(emptyBedrijfsgegevens());
   const [balans, setBalans] = useState<Balans>(emptyBalans());
   const [winstVerlies, setWinstVerlies] = useState<WinstVerlies>(emptyWinstVerlies());
+  const [uploadSucces, setUploadSucces] = useState<string | null>(null);
 
   const berekening = useMemo(
     () => berekenJaarcijfers(bedrijfsgegevens, balans, winstVerlies),
@@ -42,8 +45,38 @@ export default function JaarcijfersPage() {
     setBedrijfsgegevens(emptyBedrijfsgegevens());
     setBalans(emptyBalans());
     setWinstVerlies(emptyWinstVerlies());
+    setUploadSucces(null);
     setStep('bedrijfsgegevens');
   };
+
+  // ---- Verwerk geëxtraheerde rapportgegevens ----
+  function handleExtracted(data: ExtractieData) {
+    // Bedrijfsgegevens
+    setBedrijfsgegevens((prev) => ({
+      ...prev,
+      ...(data.naam ? { naam: data.naam } : {}),
+      ...(data.boekjaar ? { boekjaar: data.boekjaar } : {}),
+      ...(data.bedrijfsvorm ? { bedrijfsvorm: data.bedrijfsvorm } : {}),
+    }));
+
+    // Balans – vervang alleen als er data is
+    if (Object.values(data.balans).some((v) => v !== 0)) {
+      setBalans((prev) => ({ ...prev, ...data.balans }));
+    }
+
+    // W&V – vervang alleen als er data is
+    if (Object.values(data.winstVerlies).some((v) => v !== 0)) {
+      setWinstVerlies((prev) => ({ ...prev, ...data.winstVerlies }));
+    }
+
+    // Toon bevestigingsbanner
+    const naam = data.naam ?? 'Rapport';
+    const boekjaar = data.boekjaar ? ` (${data.boekjaar})` : '';
+    setUploadSucces(`${naam}${boekjaar} is ingelezen en verwerkt.`);
+
+    // Ga naar balans zodat gebruiker direct kan controleren
+    setStep('balans');
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -52,13 +85,14 @@ export default function JaarcijfersPage() {
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold text-gray-900">Jaarcijfersanalyse</h1>
-            <p className="text-xs text-gray-500">Alle bedrijfsvormen · Ratio-analyse · Rapport</p>
+            <p className="text-xs text-gray-500">
+              {bedrijfsgegevens.naam
+                ? `${bedrijfsgegevens.naam} · ${BEDRIJFSVORM_INFO[bedrijfsgegevens.bedrijfsvorm].label} · ${bedrijfsgegevens.boekjaar}`
+                : 'Alle bedrijfsvormen · Ratio-analyse · Rapport'}
+            </p>
           </div>
           <div className="flex items-center gap-3">
-            <a
-              href="/"
-              className="text-sm text-blue-600 hover:underline hidden sm:inline"
-            >
+            <a href="/" className="text-sm text-blue-600 hover:underline hidden sm:inline">
               ← Hypothekenapp
             </a>
             <button
@@ -94,9 +128,42 @@ export default function JaarcijfersPage() {
         </div>
       </div>
 
+      {/* Upload-succesbanner */}
+      {uploadSucces && (
+        <div className="max-w-5xl mx-auto px-4 pt-4 no-print">
+          <div className="flex items-center justify-between gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+            <span className="text-sm text-green-800">
+              <strong>✓ Automatisch ingevuld:</strong> {uploadSucces} Controleer de velden en pas aan waar nodig.
+            </span>
+            <button
+              onClick={() => setUploadSucces(null)}
+              className="text-green-600 hover:text-green-800 text-lg leading-none shrink-0"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Inhoud */}
       <main className="max-w-5xl mx-auto px-4 py-6">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 md:p-6">
+
+          {/* Upload-sectie: toon op alle stappen behalve analyse */}
+          {step !== 'analyse' && (
+            <div className="mb-2">
+              <details>
+                <summary className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-800 list-none flex items-center gap-1.5 mb-3">
+                  <span>📤</span>
+                  <span>Snel invullen via jaarrapport (PDF)</span>
+                  <span className="text-gray-400 text-xs ml-1">▼</span>
+                </summary>
+                <RapportUpload onExtracted={handleExtracted} />
+              </details>
+              <hr className="border-gray-100 mb-4" />
+            </div>
+          )}
+
           {step === 'bedrijfsgegevens' && (
             <StepBedrijfsgegevens data={bedrijfsgegevens} onChange={setBedrijfsgegevens} />
           )}
