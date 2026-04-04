@@ -12,9 +12,11 @@ import { ResultsPanel } from '@/components/ResultsPanel';
 import { SalaryCalculator } from '@/components/SalaryCalculator';
 import { LifeInsuranceCalculator } from '@/components/LifeInsuranceCalculator';
 import { WealthCalculator } from '@/components/WealthCalculator';
+import { ToelagenCalculator } from '@/components/ToelagenCalculator';
+import { LoansCalculator } from '@/components/LoansCalculator';
 
 // ---- Types ----
-type Section = 'hypotheek' | 'salaris' | 'orv' | 'vermogen';
+type Section = 'hypotheek' | 'salaris' | 'orv' | 'vermogen' | 'toeslagen' | 'leningen';
 type Step = 'inkomen' | 'schulden' | 'hypotheek' | 'documenten' | 'resultaat';
 
 const SECTIONS: { id: Section; label: string; icon: string; sub: string }[] = [
@@ -22,6 +24,8 @@ const SECTIONS: { id: Section; label: string; icon: string; sub: string }[] = [
   { id: 'salaris',   label: 'Salarisberekening',    icon: '💼', sub: 'Bruto ↔ Netto 2026' },
   { id: 'orv',       label: 'Overlijdensrisico',    icon: '🛡️', sub: 'ORV premie & dekking' },
   { id: 'vermogen',  label: 'Vermogen & Pensioen',  icon: '📈', sub: 'Box 3, sparen, pensioen' },
+  { id: 'toeslagen', label: 'Toeslagen',            icon: '✅', sub: 'Zorg, huur, kinderopvang' },
+  { id: 'leningen',  label: 'Leningen & Meer',      icon: '💳', sub: 'Krediet, auto, huren vs kopen' },
 ];
 
 const STEPS: { id: Step; label: string; icon: string }[] = [
@@ -190,9 +194,11 @@ export default function Home() {
       {section !== 'hypotheek' && (
         <main className="max-w-6xl mx-auto px-4 py-6">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 md:p-6">
-            {section === 'salaris'  && <SalaryCalculator />}
-            {section === 'orv'     && <LifeInsuranceCalculator />}
-            {section === 'vermogen'&& <WealthCalculator />}
+            {section === 'salaris'   && <SalaryCalculator />}
+            {section === 'orv'      && <LifeInsuranceCalculator />}
+            {section === 'vermogen' && <WealthCalculator />}
+            {section === 'toeslagen'&& <ToelagenCalculator />}
+            {section === 'leningen' && <LoansCalculator />}
           </div>
         </main>
       )}
