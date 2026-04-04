@@ -14,9 +14,11 @@ import { LifeInsuranceCalculator } from '@/components/LifeInsuranceCalculator';
 import { WealthCalculator } from '@/components/WealthCalculator';
 import { ToelagenCalculator } from '@/components/ToelagenCalculator';
 import { LoansCalculator } from '@/components/LoansCalculator';
+import { WerkgeverCalculator } from '@/components/WerkgeverCalculator';
+import { ExtraCalculator } from '@/components/ExtraCalculator';
 
 // ---- Types ----
-type Section = 'hypotheek' | 'salaris' | 'orv' | 'vermogen' | 'toeslagen' | 'leningen';
+type Section = 'hypotheek' | 'salaris' | 'orv' | 'vermogen' | 'toeslagen' | 'leningen' | 'werkgever' | 'extra';
 type Step = 'inkomen' | 'schulden' | 'hypotheek' | 'documenten' | 'resultaat';
 
 const SECTIONS: { id: Section; label: string; icon: string; sub: string }[] = [
@@ -26,6 +28,8 @@ const SECTIONS: { id: Section; label: string; icon: string; sub: string }[] = [
   { id: 'vermogen',  label: 'Vermogen & Pensioen',  icon: '📈', sub: 'Box 3, sparen, pensioen' },
   { id: 'toeslagen', label: 'Toeslagen',            icon: '✅', sub: 'Zorg, huur, kinderopvang' },
   { id: 'leningen',  label: 'Leningen & Meer',      icon: '💳', sub: 'Krediet, auto, huren vs kopen' },
+  { id: 'werkgever', label: 'Werkgever & Ondernemer', icon: '🏢', sub: 'Werkgeverskosten, BV/DGA, lijfrente' },
+  { id: 'extra',     label: 'Extra Berekeningen',    icon: '🔧', sub: 'Oversluiten, inflatie, AOW, reiskosten' },
 ];
 
 const STEPS: { id: Step; label: string; icon: string }[] = [
@@ -198,7 +202,9 @@ export default function Home() {
             {section === 'orv'      && <LifeInsuranceCalculator />}
             {section === 'vermogen' && <WealthCalculator />}
             {section === 'toeslagen'&& <ToelagenCalculator />}
-            {section === 'leningen' && <LoansCalculator />}
+            {section === 'leningen'  && <LoansCalculator />}
+            {section === 'werkgever' && <WerkgeverCalculator />}
+            {section === 'extra'     && <ExtraCalculator />}
           </div>
         </main>
       )}
