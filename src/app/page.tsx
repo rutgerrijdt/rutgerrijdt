@@ -16,9 +16,10 @@ import { ToelagenCalculator } from '@/components/ToelagenCalculator';
 import { LoansCalculator } from '@/components/LoansCalculator';
 import { WerkgeverCalculator } from '@/components/WerkgeverCalculator';
 import { ExtraCalculator } from '@/components/ExtraCalculator';
+import { ScheidingCalculator } from '@/components/ScheidingCalculator';
 
 // ---- Types ----
-type Section = 'hypotheek' | 'salaris' | 'orv' | 'vermogen' | 'toeslagen' | 'leningen' | 'werkgever' | 'extra';
+type Section = 'hypotheek' | 'salaris' | 'orv' | 'vermogen' | 'toeslagen' | 'leningen' | 'werkgever' | 'extra' | 'scheiding';
 type Step = 'inkomen' | 'schulden' | 'hypotheek' | 'documenten' | 'resultaat';
 
 const SECTIONS: { id: Section; label: string; icon: string; sub: string }[] = [
@@ -30,6 +31,7 @@ const SECTIONS: { id: Section; label: string; icon: string; sub: string }[] = [
   { id: 'leningen',  label: 'Leningen & Meer',      icon: '💳', sub: 'Krediet, auto, huren vs kopen' },
   { id: 'werkgever', label: 'Werkgever & Ondernemer', icon: '🏢', sub: 'Werkgeverskosten, BV/DGA, lijfrente' },
   { id: 'extra',     label: 'Extra Berekeningen',    icon: '🔧', sub: 'Oversluiten, inflatie, AOW, reiskosten' },
+  { id: 'scheiding', label: 'Scheiding',             icon: '⚖️', sub: 'Alimentatie, kinderalimentatie, plan' },
 ];
 
 const STEPS: { id: Step; label: string; icon: string }[] = [
@@ -205,6 +207,7 @@ export default function Home() {
             {section === 'leningen'  && <LoansCalculator />}
             {section === 'werkgever' && <WerkgeverCalculator />}
             {section === 'extra'     && <ExtraCalculator />}
+            {section === 'scheiding' && <ScheidingCalculator />}
           </div>
         </main>
       )}
