@@ -17,9 +17,12 @@ import { LoansCalculator } from '@/components/LoansCalculator';
 import { WerkgeverCalculator } from '@/components/WerkgeverCalculator';
 import { ExtraCalculator } from '@/components/ExtraCalculator';
 import { ScheidingCalculator } from '@/components/ScheidingCalculator';
+import { ZZPCalculator } from '@/components/ZZPCalculator';
+import { BeleggenCalculator } from '@/components/BeleggenCalculator';
+import { EnergieCalculator } from '@/components/EnergieCalculator';
 
 // ---- Types ----
-type Section = 'hypotheek' | 'salaris' | 'orv' | 'vermogen' | 'toeslagen' | 'leningen' | 'werkgever' | 'extra' | 'scheiding';
+type Section = 'hypotheek' | 'salaris' | 'orv' | 'vermogen' | 'toeslagen' | 'leningen' | 'werkgever' | 'extra' | 'scheiding' | 'zzp' | 'beleggen' | 'energie';
 type Step = 'inkomen' | 'schulden' | 'hypotheek' | 'documenten' | 'resultaat';
 
 const SECTIONS: { id: Section; label: string; icon: string; sub: string }[] = [
@@ -32,6 +35,9 @@ const SECTIONS: { id: Section; label: string; icon: string; sub: string }[] = [
   { id: 'werkgever', label: 'Werkgever & Ondernemer', icon: '🏢', sub: 'Werkgeverskosten, BV/DGA, lijfrente' },
   { id: 'extra',     label: 'Extra Berekeningen',    icon: '🔧', sub: 'Oversluiten, inflatie, AOW, reiskosten' },
   { id: 'scheiding', label: 'Scheiding',             icon: '⚖️', sub: 'Alimentatie, kinderalimentatie, plan' },
+  { id: 'zzp',      label: 'ZZP / Freelancer',     icon: '🧾', sub: 'Netto inkomen, uurtarief, vs loondienst' },
+  { id: 'beleggen', label: 'Beleggen & FIRE',       icon: '📈', sub: 'ETF-groei, FIRE-calculator, DCA' },
+  { id: 'energie',  label: 'Energie & Verduurzaming', icon: '🌱', sub: 'Zonnepanelen, isolatie, warmtepomp' },
 ];
 
 const STEPS: { id: Step; label: string; icon: string }[] = [
@@ -208,6 +214,9 @@ export default function Home() {
             {section === 'werkgever' && <WerkgeverCalculator />}
             {section === 'extra'     && <ExtraCalculator />}
             {section === 'scheiding' && <ScheidingCalculator />}
+            {section === 'zzp'      && <ZZPCalculator />}
+            {section === 'beleggen' && <BeleggenCalculator />}
+            {section === 'energie'  && <EnergieCalculator />}
           </div>
         </main>
       )}
